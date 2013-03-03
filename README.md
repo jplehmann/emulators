@@ -1,6 +1,6 @@
 
 Emulators.js
-------------
+============
 Emulators.js is a utility to more easily manage an array of emulators and installed applications.
 
 
@@ -15,14 +15,19 @@ Options
 
 
 Unit Tests
-==========
+----------
 To run unit tests:
 
     > jasmine-node spec/emulators.spec.js
 
 
+Todos
+-----
+* Test with real emulators and adb commands.
+
+
 Questions
-=========
+---------
 - Decide if commands should be dynamic or specific and implemented, 
   and if the latter, at both Emus and Emu level?
   - problem of dynamic is that i cant print a nice help menu, or
