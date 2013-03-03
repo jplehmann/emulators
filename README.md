@@ -6,7 +6,7 @@ Emulators.js is a utility to more easily manage an array of emulators and instal
 
 Requirements
 ------------
-Install [node.js] from its webite.
+Install [node.js]. Then using `npm install <package>` install commander, underscore and jasmine-node.
 
 
 Options
