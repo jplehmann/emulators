@@ -32,8 +32,11 @@ if (!String.prototype.format) {
  * Wraps system execute calls, primarily for mocking.
  */
 function System() {
-  // shell calls 
-  this.execute = function(cmd) {
+  /**
+   * @cmd the command to run
+   * @next function to run synchronously after command
+   */
+  this.exec = function(cmd, next) {
     console.log("Executing: " + cmd);
     if (REALLY_EXECUTE) {
       var child = exec(cmd,
@@ -42,25 +45,52 @@ function System() {
             console.log('exec error: ' + error);
             console.log('stdout: ' + stdout);
             console.log('stderr: ' + stderr);
+          } else {
+            console.log("Done executing: " + cmd);
           }
-      });
+          // chain to the next bit logic synchronously
+          if (next !== undefined) {
+            next();
+          }
+        });
     }
     return 0;
   };
-  this.executeDetached = function(cmd) {
+  /**
+   * Execute this command and detach from it.
+   */
+  this.execDetached = function(cmd) {
     var cmdArray = cmd.trim().split(' ');
     console.log(cmdArray);
     var child = spawn(cmdArray[0], cmdArray.slice(1), {
       detached: true,
+      // TODO: direct these to a file in /tmp
       stdio: [ 'ignore', process.stdout, process.stderr]
     });
     child.unref();
     console.log("done executing");
-  }
+  };
 }
 
 /** Global "system" object */
 var sys = new System();
+
+/**
+ * We restart ABD because it is very finicky.
+ *
+ * @next is callback function to run when complete.
+ */
+function restartAdb(next) {
+  console.log("Restarting adb.");
+  sys.exec("adb kill-server", function() {
+    sys.exec("adb start-server", function() {
+      console.log("Restart of adb complete.");
+      if (next !== undefined) {
+        next();
+      }
+    });
+  });
+}
 
 /**
  * A configured emulator, which may not be started.
@@ -84,24 +114,24 @@ function Emulator(id, options) {
     var headlessExtras = "-wipe-data -no-boot-anim -no-window -noaudio";
     var cmd = visual ? cmdStart + " " + cmdEnd: 
         cmdStart + " " + headlessExtras + cmdEnd;
-    sys.executeDetached(cmd);
+    sys.execDetached(cmd);
   };
   this.emuStop = function() {
-    sys.execute("adb -s {0} emu kill".format(this.serial));
+    sys.exec("adb -s {0} emu kill".format(this.serial));
   };
 
   /** Emulator-app commands. */
   this.appStop = function(app) {
-    sys.execute("adb -s {0} shell am force-stop {1}".format(this.serial, app));
+    sys.exec("adb -s {0} shell am force-stop {1}".format(this.serial, app));
   };
   this.appClear = function(app) {
-    sys.execute("adb -s {0} shell pm clear {1}".format(this.serial, app));
+    sys.exec("adb -s {0} shell pm clear {1}".format(this.serial, app));
   };
   this.appInstall = function(apk) {
-    sys.execute("adb -s {0} install {1}".format(this.serial, apk));
+    sys.exec("adb -s {0} install {1}".format(this.serial, apk));
   };
   this.appUninstall = function(app) {
-    sys.execute("adb -s {0} uninstall {1}".format(this.serial, app));
+    sys.exec("adb -s {0} uninstall {1}".format(this.serial, app));
   };
 }
 
@@ -270,7 +300,9 @@ function parseOptions() {
 function main() {
   var opts = parseOptions();
   var emus = new Emulators({antInit:"ant.properties"});
-  emus.executeFromOptions(opts);
+  restartAdb(function() {
+    emus.executeFromOptions(opts);
+  });
 }
 
 if (require.main === module) {

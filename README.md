@@ -33,15 +33,16 @@ x update commands to be the correct ones
   x extract PORT from serial # ( :9)
   x emu name
 * finish start
+  * make start block on it being started
   * outfile with unique name
   * try to create and start 3 times
-* make start block on it being started
 * resetAdb
-* signal
-* ant properties, replace . with _
-* utilize BROOKLYN_HOME to find ant.properties
 * check if emus are running by grepping adb (before every command?)
 * add console as another property read from the property file
+
+* brooklyn specific
+  * signal
+  * utilize BROOKLYN_HOME to find ant.properties (and build.xml?)
 
 
 Questions
