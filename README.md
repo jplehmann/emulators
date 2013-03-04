@@ -23,7 +23,17 @@ To run unit tests:
 
 Todos
 -----
-* Test with real emulators and adb commands.
+x update commands to be the correct ones
+  x extract PORT from serial # ( :9)
+  * emu name
+  * outfile with unique name
+* try to create and start 3 times
+* resetAdb
+* signal
+* ant properties, replace . with _
+* utilize BROOKLYN_HOME to find ant.properties
+* check if emus are running by grepping adb (before every command?)
+* add console as another property read from the property file
 
 
 Questions

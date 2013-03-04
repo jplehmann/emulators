@@ -12,7 +12,20 @@ var assert = require('assert');
 var program = require('commander');
 var _ = require('underscore');
 
-var REALLY_EXECUTE = false;
+var REALLY_EXECUTE = true;
+
+//first, checks if it isn't implemented yet
+if (!String.prototype.format) {
+  String.prototype.format = function() {
+    var args = arguments;
+    return this.replace(/{(\d+)}/g, function(match, number) { 
+      return typeof args[number] != 'undefined'
+        ? args[number]
+        : match
+      ;
+    });
+  };
+}
 
 /**
  * Wraps system execute calls, primarily for mocking.
@@ -45,21 +58,39 @@ function Emulator(id, options) {
   this.id = id;
   //this.options = options;
   this.serial = options.serial;
-  this.start = function() {
-    // HOWTO: format a string without doing console.log
-    sys.execute("emulators start " + this.serial);
+  this.name = "tmp-name"; // options.name;
+  this.port = this.serial.substring(9);
+
+  /** Emulator only commands. */
+  this.emuStart = function() {
+    // TODO: try up to 3 times to start the emulator
+    // TODO: create a unique outfile
+    var outfile = "/tmp/" + this.serial
+    var cmdStart = "nohup emulator -avd {0} -port {1}".format(this.name, this.port);
+    var cmdEnd = "> {0} 2>&1 &".format(outfile);
+    var headlessExtras = "-wipe-data -no-boot-anim -no-window -noaudio";
+    if (options.visual) {
+      sys.execute(cmdStart + " " + cmdEnd);
+    } else {
+      sys.execute(cmdStart + " " + headlessExtras + " " + cmdEnd);
+    }
   };
-  this.stop = function() {
-    sys.execute("emulators stop " + this.serial);
+  this.emuStop = function() {
+    sys.execute("adb -s {0} emu kill".format(this.serial));
   };
-  this.clear = function(app) {
-    sys.execute("adb -s " + this.serial + " clear " + app);
+
+  /** Emulator-app commands. */
+  this.appStop = function(app) {
+    sys.execute("adb -s {0} shell am force-stop {1}".format(this.serial, app));
   };
-  this.install = function(app) {
-    sys.execute("adb -s " + this.serial + " install " + app);
+  this.appClear = function(app) {
+    sys.execute("adb -s {0} shell pm clear {1}".format(this.serial, app));
   };
-  this.forceStop = function(app) {
-    sys.execute("adb -s " + this.serial + " forceStop " + app);
+  this.appInstall = function(apk) {
+    sys.execute("adb -s {0} install {1}".format(this.serial, apk));
+  };
+  this.appUninstall = function(app) {
+    sys.execute("adb -s {0} uninstall {1}".format(this.serial, app));
   };
 }
 
@@ -83,24 +114,24 @@ function Emulators(opts) {
 
   /** Emulator only commands. */
   self.cmd_start = function(ids, opts) {
-    self._execute(ids, function(emu) { emu.start(); });
+    self._execute(ids, function(emu) { emu.emuStart(); });
   }
   self.cmd_stop = function(ids, opts) {
-    self._execute(ids, function(emu) { emu.stop(); });
+    self._execute(ids, function(emu) { emu.emuStop(); });
   }
 
   /** Emulator-app commands. */
   self.cmd_forceStop = function(ids, opts) {
-    self._execute(ids, function(emu) { emu.forceStop(opts.app); });
+    self._execute(ids, function(emu) { emu.appStop(opts.app); });
   }
   self.cmd_clear = function(ids, opts) {
-    self._execute(ids, function(emu) { emu.clear(opts.app); });
+    self._execute(ids, function(emu) { emu.appClear(opts.app); });
   }
   self.cmd_install = function(ids, opts) {
-    self._execute(ids, function(emu) { emu.install(opts.app); });
+    self._execute(ids, function(emu) { emu.appInstall(opts.apk); });
   }
   self.cmd_uninstall = function(ids, opts) {
-    self._execute(ids, function(emu) { emu.uninstall(opts.app); });
+    self._execute(ids, function(emu) { emu.appUninstall(opts.app); });
   }
 
   self.executeFromOptions = function(opts) {
@@ -171,6 +202,7 @@ function parseOptions() {
     .usage('<command> [emulator numbers; default=all]')
     .option('-a, --app <app name>', 'E.g. com.zixcorp.brooklyndroid')
     .option('-v, --visual', 'Run emulators in visual rather than headless mode')
+    .option('--apk <apk file>', 'E.g. brooklyndroid.apk')
   program.on('--help', function(){
     console.log('  Valid commands: ' + validCommands);
     console.log('');
@@ -197,6 +229,7 @@ function parseOptions() {
     cmd : "cmd_" + program.cmd,
     ids : program.args.slice(1),
     app : defaultVal(program.app, process.env.EMULATORS_APP),
+    apk : program.apk, 
     visual : defaultVal(program.visual, false),
   };
 
