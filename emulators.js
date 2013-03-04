@@ -150,6 +150,7 @@ function Emulators(opts) {
    * Define a new emulator.
    */
   self.add = function(id, opts) {
+    console.log("Adding emulator: " + id + " " + opts);
     self.emus[id] = new Emulator(id, opts);
   }
 
@@ -199,37 +200,38 @@ function Emulators(opts) {
   }
 
   /**
-   * Define emulators based on ant properties file definitions:
-   *    emulator.<id>=<serial_num>
+   * Load a key-value properties file into an object.
    */
-  self.initFromAntProps = function(filename) {
+  self.loadProperties = function(filename) {
     var data = fs.readFileSync(filename).toString();
-    var emuDefs = {};
-    // TODO: read properties file then process them
+    var props = {}
+    // create an object of the property value pairs
     data.split('\n').forEach(function (line) { 
-      var match = line.match(/^emulator\.(\d+).console.port=(emulator-(.+))$/);
-      if (match) {
-        var id = match[1];
-        var serial = match[2];
-        var port = match[3];
-        emuDefs[id] = emuDefs[id] || {};
-        emuDefs[id].serial = serial;
-        emuDefs[id].port = port;
-      } else {
-        var match2 = line.match(/^emulator\.(\d+).name=(.+)$/);
-        if (match2) {
-          var id2 = match2[1];
-          var name = match2[2];
-          emuDefs[id2] = emuDefs[id] || {};
-          emuDefs[id2].name = name;
-        }
+      if (line.trim().length > 0) {
+        var vals = line.split('=');
+        props[vals[0].trim()] = vals[1].trim();
       }
     });
-    //console.log(emuDefs);
-    _.each(emuDefs, function(item, id) {
-      self.add(id, {"serial":item.serial, "name":item.name});
-    });
+    return props;
   }
+
+  /**
+   * Define emulators based on ant properties file definitions.
+   */
+  self.initFromAntProps = function(filename) {
+    var props = this.loadProperties(filename);
+    var emuDefs = {}
+    var size = _.pairs(props).length;
+    // assume that # emulators <= # of properties
+    // probe to find out which ones exist
+    for (var i=0; i < size; i++) {
+      var name = props["emulator.{0}.name".format(i)];
+      var serial = props["emulator.{0}.console.port".format(i)];
+      if (name && serial) {
+        self.add(i, {name:name, serial:serial});
+      }
+    }
+  };
 
   if (opts && opts.antInit) {
     self.initFromAntProps(opts.antInit);
@@ -275,12 +277,14 @@ function parseOptions() {
 
   // validation on the command
   if (program.args.length < 1) {
-    throw "Must provide a command.";
+    console.log("\nERROR: Please must provide a command argument.");
+    program.help();
   } else {
     program.cmd = program.args[0];
   }
   if (!_.contains(validCommands, program.cmd)) {
-    throw "Unknown command: " + program.cmd;
+    console.log("\nERROR: Unknown command: " + program.cmd);
+    program.help();
   }
 
   var opts = {
