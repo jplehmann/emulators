@@ -6,7 +6,10 @@
  */
 
 var exec = require('child_process').exec;
-var fs = require('fs');
+var fs = require('fs'),
+    spawn = require('child_process').spawn,
+    out = fs.openSync('./out.log', 'a'),
+    err = fs.openSync('./out.log', 'a');
 var assert = require('assert');
 
 var program = require('commander');
@@ -37,15 +40,25 @@ function System() {
     if (REALLY_EXECUTE) {
       var child = exec(cmd,
         function (error, stdout, stderr) {
-          console.log('stdout: ' + stdout);
-          console.log('stderr: ' + stderr);
           if (error !== null) {
             console.log('exec error: ' + error);
+            console.log('stdout: ' + stdout);
+            console.log('stderr: ' + stderr);
           }
       });
     }
     return 0;
   };
+  this.executeDetached = function(cmd) {
+    var cmdArray = cmd.trim().split(' ');
+    console.log(cmdArray);
+    var child = spawn(cmdArray[0], cmdArray.slice(1), {
+      detached: true,
+      stdio: [ 'ignore', out, err ]
+    });
+    child.unref();
+    console.log("done executing");
+  }
 }
 
 /** Global "system" object */
@@ -58,22 +71,22 @@ function Emulator(id, options) {
   this.id = id;
   //this.options = options;
   this.serial = options.serial;
-  this.name = "tmp-name"; // options.name;
+  this.name = options.name;
   this.port = this.serial.substring(9);
 
   /** Emulator only commands. */
-  this.emuStart = function() {
+  this.emuStart = function(visual) {
     // TODO: try up to 3 times to start the emulator
     // TODO: create a unique outfile
     var outfile = "/tmp/" + this.serial
-    var cmdStart = "nohup emulator -avd {0} -port {1}".format(this.name, this.port);
-    var cmdEnd = "> {0} 2>&1 &".format(outfile);
+    //var cmdStart = "nohup emulator -avd {0} -port {1}".format(this.name, this.port);
+    var cmdStart = "emulator -avd {0} -port {1}".format(this.name, this.port);
+    // TODO: redirect output to logfile
+    var cmdEnd = ""; // " &"; // "> {0} 2>&1 &".format(outfile);
     var headlessExtras = "-wipe-data -no-boot-anim -no-window -noaudio";
-    if (options.visual) {
-      sys.execute(cmdStart + " " + cmdEnd);
-    } else {
-      sys.execute(cmdStart + " " + headlessExtras + " " + cmdEnd);
-    }
+    var cmd = visual ? cmdStart + " " + cmdEnd: 
+        cmdStart + " " + headlessExtras + cmdEnd;
+    sys.executeDetached(cmd);
   };
   this.emuStop = function() {
     sys.execute("adb -s {0} emu kill".format(this.serial));
@@ -114,7 +127,7 @@ function Emulators(opts) {
 
   /** Emulator only commands. */
   self.cmd_start = function(ids, opts) {
-    self._execute(ids, function(emu) { emu.emuStart(); });
+    self._execute(ids, function(emu) { emu.emuStart(opts.visual); });
   }
   self.cmd_stop = function(ids, opts) {
     self._execute(ids, function(emu) { emu.emuStop(); });
@@ -163,13 +176,30 @@ function Emulators(opts) {
    */
   self.initFromAntProps = function(filename) {
     var data = fs.readFileSync(filename).toString();
+    var emuDefs = {};
+    // TODO: read properties file then process them
     data.split('\n').forEach(function (line) { 
-      var match = line.match(/^emulator\.(\d+)=(.+)$/);
+      var match = line.match(/^emulator\.(\d+).console.port=(emulator-(.+))$/);
       if (match) {
         var id = match[1];
         var serial = match[2];
-        self.add(id, {"serial":serial});
+        var port = match[3];
+        emuDefs[id] = emuDefs[id] || {};
+        emuDefs[id].serial = serial;
+        emuDefs[id].port = port;
+      } else {
+        var match2 = line.match(/^emulator\.(\d+).name=(.+)$/);
+        if (match2) {
+          var id2 = match2[1];
+          var name = match2[2];
+          emuDefs[id2] = emuDefs[id] || {};
+          emuDefs[id2].name = name;
+        }
       }
+    });
+    console.log(emuDefs);
+    _.each(emuDefs, function(item, id) {
+      self.add(id, {"serial":item.serial, "name":item.name});
     });
   }
 
@@ -189,7 +219,7 @@ function parseOptions() {
   // HOWTO: do this simpler?
   var validCommands = 
     _.map(
-        _.filter(Object.keys(new Emulators()), 
+        _.filter(_.keys(new Emulators()), 
           function(k) {
             return /^cmd_/.test(k);
           }), 

@@ -27,6 +27,7 @@ x update commands to be the correct ones
   x extract PORT from serial # ( :9)
   * emu name
   * outfile with unique name
+* make start block on it being started
 * try to create and start 3 times
 * resetAdb
 * signal
