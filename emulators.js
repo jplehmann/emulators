@@ -127,7 +127,7 @@ function Emulators(opts) {
 
   /** Emulator only commands. */
   self.cmd_start = function(ids, opts) {
-    self._execute(ids, function(emu) { emu.emuStart(opts.visual); });
+    self._execute(ids, function(emu) { emu.emuStart(opts.visual || false); });
   }
   self.cmd_stop = function(ids, opts) {
     self._execute(ids, function(emu) { emu.emuStop(); });
@@ -157,7 +157,7 @@ function Emulators(opts) {
    */
   self._execute = function(ids, operation) {
     // if ids are provide start only those
-    if (ids !== undefined) {
+    if (ids !== undefined && ids.length > 0) {
       _.each(ids, function(id) {
         operation(self.emus[id]);
       });

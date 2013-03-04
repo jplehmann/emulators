@@ -18,17 +18,24 @@ Unit Tests
 ----------
 To run unit tests:
 
-    > jasmine-node spec/emulators.spec.js
+  If installed jasmine-node globally:
+
+    > jasmine-node spec
+
+  Else something like this:
+    
+    > node ./node_modules/jasmine-node/lib/jasmine-node/cli.js spec
 
 
 Todos
 -----
 x update commands to be the correct ones
   x extract PORT from serial # ( :9)
-  * emu name
+  x emu name
+* finish start
   * outfile with unique name
+  * try to create and start 3 times
 * make start block on it being started
-* try to create and start 3 times
 * resetAdb
 * signal
 * ant properties, replace . with _
