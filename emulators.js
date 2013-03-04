@@ -225,7 +225,7 @@ function Emulators(opts) {
         }
       }
     });
-    console.log(emuDefs);
+    //console.log(emuDefs);
     _.each(emuDefs, function(item, id) {
       self.add(id, {"serial":item.serial, "name":item.name});
     });

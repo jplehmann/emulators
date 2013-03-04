@@ -32,11 +32,11 @@ Todos
 x update commands to be the correct ones
   x extract PORT from serial # ( :9)
   x emu name
+x resetAdb
 * finish start
   * make start block on it being started
   * outfile with unique name
   * try to create and start 3 times
-* resetAdb
 * check if emus are running by grepping adb (before every command?)
 * add console as another property read from the property file
 
