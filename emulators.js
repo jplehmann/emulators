@@ -52,7 +52,7 @@ function Emulator(id, options) {
   this.stop = function() {
     sys.execute("emulators stop " + this.serial);
   };
-  this.clearData = function(app) {
+  this.clear = function(app) {
     sys.execute("adb -s " + this.serial + " clear " + app);
   };
   this.install = function(app) {
@@ -81,20 +81,26 @@ function Emulators(opts) {
     self.emus[id] = new Emulator(id, opts);
   }
 
+  /** Emulator only commands. */
   self.cmd_start = function(ids, opts) {
     self._execute(ids, function(emu) { emu.start(); });
   }
   self.cmd_stop = function(ids, opts) {
     self._execute(ids, function(emu) { emu.stop(); });
   }
-  self.cmd_clearData = function(ids, opts) {
-    self._execute(ids, function(emu) { emu.clearData(opts.app); });
+
+  /** Emulator-app commands. */
+  self.cmd_forceStop = function(ids, opts) {
+    self._execute(ids, function(emu) { emu.forceStop(opts.app); });
+  }
+  self.cmd_clear = function(ids, opts) {
+    self._execute(ids, function(emu) { emu.clear(opts.app); });
   }
   self.cmd_install = function(ids, opts) {
     self._execute(ids, function(emu) { emu.install(opts.app); });
   }
-  self.cmd_forceStop = function(ids, opts) {
-    self._execute(ids, function(emu) { emu.forceStop(opts.app); });
+  self.cmd_uninstall = function(ids, opts) {
+    self._execute(ids, function(emu) { emu.uninstall(opts.app); });
   }
 
   self.executeFromOptions = function(opts) {
