@@ -7,9 +7,7 @@
 
 var exec = require('child_process').exec;
 var fs = require('fs'),
-    spawn = require('child_process').spawn,
-    out = fs.openSync('./out.log', 'a'),
-    err = fs.openSync('./out.log', 'a');
+    spawn = require('child_process').spawn
 var assert = require('assert');
 
 var program = require('commander');
@@ -54,7 +52,7 @@ function System() {
     console.log(cmdArray);
     var child = spawn(cmdArray[0], cmdArray.slice(1), {
       detached: true,
-      stdio: [ 'ignore', out, err ]
+      stdio: [ 'ignore', process.stdout, process.stderr]
     });
     child.unref();
     console.log("done executing");
