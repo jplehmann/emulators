@@ -13,7 +13,10 @@ var assert = require('assert');
 var program = require('commander');
 var _ = require('underscore');
 
+var DEFAULT_APP = process.env.EMULATORS_APP;
+var DEFAULT_PROP_FILE = process.env.EMULATORS_PROPERTIES || "ant.properties";
 var REALLY_EXECUTE = true;
+var RESTART_ABD_ALWAYS = false;
 
 //first, checks if it isn't implemented yet
 if (!String.prototype.format) {
@@ -81,34 +84,39 @@ var sys = new System();
  * @next is callback function to run when complete.
  */
 function restartAdb(next) {
-  console.log("Restarting adb.");
-  sys.exec("adb kill-server", function() {
-    sys.exec("adb start-server", function() {
-      console.log("Restart of adb complete.");
-      if (next !== undefined) {
-        next();
-      }
+  if (RESTART_ABD_ALWAYS) {
+    console.log("Restarting adb.");
+    sys.exec("adb kill-server", function() {
+      sys.exec("adb start-server", function() {
+        console.log("Restart of adb complete.");
+        if (next !== undefined) {
+          next();
+        }
+      });
     });
-  });
+  } else {
+    next();
+  }
 }
 
 /**
  * A configured emulator, which may not be started.
  */
 function Emulator(id, options) {
-  this.id = id;
-  //this.options = options;
-  this.serial = options.serial;
-  this.name = options.name;
-  this.port = this.serial.substring(9);
+  var self = this;
+  self.id = id;
+  //self.options = options;
+  self.serial = options.serial;
+  self.name = options.name;
+  self.port = self.serial.substring(9);
 
   /** Emulator only commands. */
-  this.emuStart = function(visual) {
+  self.emuStart = function(visual) {
     // TODO: try up to 3 times to start the emulator
     // TODO: create a unique outfile
-    var outfile = "/tmp/" + this.serial
-    //var cmdStart = "nohup emulator -avd {0} -port {1}".format(this.name, this.port);
-    var cmdStart = "emulator -avd {0} -port {1}".format(this.name, this.port);
+    var outfile = "/tmp/" + self.serial
+    //var cmdStart = "nohup emulator -avd {0} -port {1}".format(self.name, self.port);
+    var cmdStart = "emulator -avd {0} -port {1}".format(self.name, self.port);
     // TODO: redirect output to logfile
     var cmdEnd = ""; // " &"; // "> {0} 2>&1 &".format(outfile);
     var headlessExtras = "-wipe-data -no-boot-anim -no-window -noaudio";
@@ -116,23 +124,51 @@ function Emulator(id, options) {
         cmdStart + " " + headlessExtras + cmdEnd;
     sys.execDetached(cmd);
   };
-  this.emuStop = function() {
-    sys.exec("adb -s {0} emu kill".format(this.serial));
+  self.emuStop = function() {
+    self._doIfRunning(function() {
+      sys.exec("adb -s {0} emu kill".format(self.serial));
+    });
   };
 
   /** Emulator-app commands. */
-  this.appStop = function(app) {
-    sys.exec("adb -s {0} shell am force-stop {1}".format(this.serial, app));
+  self.appStop = function(app) {
+    self._doIfRunning(function() {
+      sys.exec("adb -s {0} shell am force-stop {1}".format(self.serial, app));
+    });
   };
-  this.appClear = function(app) {
-    sys.exec("adb -s {0} shell pm clear {1}".format(this.serial, app));
+  self.appClear = function(app) {
+    self._doIfRunning(function() {
+      sys.exec("adb -s {0} shell pm clear {1}".format(self.serial, app));
+    });
   };
-  this.appInstall = function(apk) {
-    sys.exec("adb -s {0} install {1}".format(this.serial, apk));
+  self.appInstall = function(apk) {
+    self._doIfRunning(function() {
+      sys.exec("adb -s {0} install {1}".format(self.serial, apk));
+    });
   };
-  this.appUninstall = function(app) {
-    sys.exec("adb -s {0} uninstall {1}".format(this.serial, app));
+  self.appUninstall = function(app) {
+    self._doIfRunning(function() {
+      sys.exec("adb -s {0} uninstall {1}".format(self.serial, app));
+    });
   };
+  /**
+   * Execute the callback onResult iff self emulator is currently running.
+   */
+  self._doIfRunning = function(onResult) {
+    // true if 
+    //   adb devices | grep self.serial != ""
+    var child = exec("adb devices | grep " + self.serial,
+      function (error, stdout, stderr) {
+        //console.log("adb device grep got: " + stdout);
+        if (stdout.trim().match("^" + self.serial)) {
+          onResult();
+        } else {
+          console.log("Emulator is not running: " + self.serial);
+          process.exit(-1);
+        }
+      }
+    );
+  }
 }
 
 /**
@@ -150,7 +186,6 @@ function Emulators(opts) {
    * Define a new emulator.
    */
   self.add = function(id, opts) {
-    console.log("Adding emulator: " + id + " " + opts);
     self.emus[id] = new Emulator(id, opts);
   }
 
@@ -290,7 +325,7 @@ function parseOptions() {
   var opts = {
     cmd : "cmd_" + program.cmd,
     ids : program.args.slice(1),
-    app : defaultVal(program.app, process.env.EMULATORS_APP),
+    app : defaultVal(program.app, DEFAULT_APP),
     apk : program.apk, 
     visual : defaultVal(program.visual, false),
   };
@@ -303,7 +338,7 @@ function parseOptions() {
 
 function main() {
   var opts = parseOptions();
-  var emus = new Emulators({antInit:"ant.properties"});
+  var emus = new Emulators({antInit:DEFAULT_PROP_FILE});
   restartAdb(function() {
     emus.executeFromOptions(opts);
   });
