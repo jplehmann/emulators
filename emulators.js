@@ -300,9 +300,9 @@ function parseOptions() {
   program
     .version('0.0.1')
     .usage('<command> [emulator numbers; default=all]')
-    .option('-a, --app <app name>', 'E.g. com.zixcorp.brooklyndroid')
+    .option('-a, --app <app name>', 'E.g. com.mycorp.myapp')
     .option('-v, --visual', 'Run emulators in visual rather than headless mode')
-    .option('--apk <apk file>', 'E.g. brooklyndroid.apk')
+    .option('--apk <apk file>', 'E.g. myapp.apk')
   program.on('--help', function(){
     console.log('  Valid commands: ' + validCommands);
     console.log('');
