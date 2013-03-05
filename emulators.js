@@ -63,10 +63,11 @@ function System() {
    * Execute this command and detach from it.
    */
   this.execDetached = function(cmd) {
+    console.log("Executing: " + cmd);
     var cmdArray = cmd.trim().split(' ');
     console.log(cmdArray);
     var child = spawn(cmdArray[0], cmdArray.slice(1), {
-      detached: true,
+      //detached: true,
       // TODO: direct these to a file in /tmp
       stdio: [ 'ignore', process.stdout, process.stderr]
     });
@@ -125,6 +126,7 @@ function Emulator(id, options) {
     sys.execDetached(cmd);
   };
   self.emuStop = function() {
+    console.log("trying to stop: " + self.serial);
     self._doIfRunning(function() {
       sys.exec("adb -s {0} emu kill".format(self.serial));
     });
@@ -157,14 +159,14 @@ function Emulator(id, options) {
   self._doIfRunning = function(onResult) {
     // true if 
     //   adb devices | grep self.serial != ""
+    console.log("DBG: running 'adb devices | grep " + self.serial);
     var child = exec("adb devices | grep " + self.serial,
       function (error, stdout, stderr) {
         //console.log("adb device grep got: " + stdout);
         if (stdout.trim().match("^" + self.serial)) {
           onResult();
         } else {
-          console.log("Emulator is not running: " + self.serial);
-          process.exit(-1);
+          console.log("Emulator is not running: {0} \n({1})".format(self.serial, stdout));
         }
       }
     );
@@ -244,7 +246,10 @@ function Emulators(opts) {
     data.split('\n').forEach(function (line) { 
       if (line.trim().length > 0) {
         var vals = line.split('=');
-        props[vals[0].trim()] = vals[1].trim();
+        try {
+          props[vals[0].trim()] = vals[1].trim();
+        } catch (err) {
+        }
       }
     });
     return props;
