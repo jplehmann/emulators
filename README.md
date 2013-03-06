@@ -37,6 +37,9 @@ x why does it start emulators which dont start all the way? -- visual
 
 Todos
 -----
+* try using setTimeout and setInterval/clearInterval
+  * check if device is started by repeatedly checking at intervals,
+    once done execute a method
 * problem with restart adb causes grep to fail
 * finish start
   * make start block on it being started

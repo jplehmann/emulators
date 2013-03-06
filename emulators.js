@@ -151,21 +151,31 @@ function Emulator(id, options) {
   };
   /**
    * Execute the callback onResult iff self emulator is currently running.
+   * @attempts number of times to try with 1 second delays
    */
-  self._doIfRunning = function(onResult) {
-    // true if 
-    //   adb devices | grep self.serial != ""
-    console.log("DBG: running 'adb devices | grep " + self.serial);
-    var child = exec("adb devices | grep " + self.serial,
-      function (error, stdout, stderr) {
-        //console.log("adb device grep got: " + stdout);
-        if (stdout.trim().match("^" + self.serial)) {
-          onResult();
-        } else {
-          console.log("Emulator is not running: {0} \n({1})".format(self.serial, stdout));
-        }
-      }
-    );
+  self._doIfRunning = function(onResult, attempts) {
+    var delayMs = 1000,
+        attempts = attempts || 1;
+    // TODO: keep running this until it's positive or we've tried 10x
+    // TODO: want try number #1 to be with no delay before it
+    function scanForDevice() {
+      console.log("DBG: %d: trying 'adb devices | grep %s", attempts, self.serial);
+      exec("adb devices | grep " + self.serial,
+        function (error, stdout, stderr) {
+          if (stdout.trim().match("^" + self.serial)) {
+            onResult();
+            clearInterval(timer);
+          } else {
+            console.log("Emulator is not running: {0} \n({1})".format(self.serial, stdout));
+            if (--attempts == 0) {
+              clearInterval(timer);
+            }
+          }
+        });
+    };
+    // try once immediately
+    scanForDevice();
+    var timer = setInterval(scanForDevice, delayMs);
   };
 }
 
