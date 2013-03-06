@@ -112,12 +112,13 @@ function Emulator(id, options) {
     // TODO: create a unique outfile
     //var outfile = "/tmp/" + self.serial;
     //var cmdStart = "nohup emulator -avd {0} -port {1}".format(self.name, self.port);
-    var cmdStart = "emulator -avd {0} -port {1}".format(self.name, self.port);
     // TODO: redirect output to logfile
-    var cmdEnd = ""; // " &"; // "> {0} 2>&1 &".format(outfile);
-    var headlessExtras = "-wipe-data -no-boot-anim -no-window -noaudio";
-    var cmd = visual ? cmdStart + " " + cmdEnd: 
-        cmdStart + " " + headlessExtras + cmdEnd;
+    var cmdStart = "emulator -avd {0} -port {1}".format(self.name, self.port),
+        cmdEnd = "", // " &"; // "> {0} 2>&1 &".format(outfile),
+        headlessExtras = "-wipe-data -no-boot-anim -no-window -noaudio",
+        cmd = visual ? 
+          cmdStart + " " + cmdEnd : 
+          cmdStart + " " + headlessExtras + cmdEnd;
     sys.execDetached(cmd);
   };
   self.emuStop = function() {
@@ -235,8 +236,8 @@ function Emulators(opts) {
    * Load a key-value properties file into an object.
    */
   self.loadProperties = function(filename) {
-    var data = fs.readFileSync(filename).toString();
-    var props = {};
+    var data = fs.readFileSync(filename).toString(),
+        props = {};
     // create an object of the property value pairs
     data.split('\n').forEach(function (line) { 
       if (line.trim().length > 0) {
@@ -254,8 +255,8 @@ function Emulators(opts) {
    * Define emulators based on ant properties file definitions.
    */
   self.initFromAntProps = function(filename) {
-    var props = this.loadProperties(filename);
-    var size = _.pairs(props).length;
+    var props = this.loadProperties(filename),
+        size = _.pairs(props).length;
     // assume that # emulators <= # of properties
     // probe to find out which ones exist
     for (var i=0; i < size; i++) {
