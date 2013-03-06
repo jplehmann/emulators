@@ -7,8 +7,7 @@
 
 var exec = require('child_process').exec;
 var fs = require('fs'),
-    spawn = require('child_process').spawn
-var assert = require('assert');
+    spawn = require('child_process').spawn;
 
 var program = require('commander');
 var _ = require('underscore');
@@ -23,10 +22,7 @@ if (!String.prototype.format) {
   String.prototype.format = function() {
     var args = arguments;
     return this.replace(/{(\d+)}/g, function(match, number) { 
-      return typeof args[number] != 'undefined'
-        ? args[number]
-        : match
-      ;
+      return typeof args[number] !== 'undefined' ? args[number] : match;
     });
   };
 }
@@ -42,8 +38,7 @@ function System() {
   this.exec = function(cmd, next) {
     console.log("Executing: " + cmd);
     if (REALLY_EXECUTE) {
-      var child = exec(cmd,
-        function (error, stdout, stderr) {
+      exec(cmd, function (error, stdout, stderr) {
           if (error !== null) {
             console.log('exec error: ' + error);
             console.log('stdout: ' + stdout);
@@ -115,7 +110,7 @@ function Emulator(id, options) {
   self.emuStart = function(visual) {
     // TODO: try up to 3 times to start the emulator
     // TODO: create a unique outfile
-    var outfile = "/tmp/" + self.serial
+    //var outfile = "/tmp/" + self.serial;
     //var cmdStart = "nohup emulator -avd {0} -port {1}".format(self.name, self.port);
     var cmdStart = "emulator -avd {0} -port {1}".format(self.name, self.port);
     // TODO: redirect output to logfile
@@ -170,7 +165,7 @@ function Emulator(id, options) {
         }
       }
     );
-  }
+  };
 }
 
 /**
@@ -182,40 +177,40 @@ function Emulator(id, options) {
 function Emulators(opts) {
   var self = this;
   // maps id -> emulator
-  self.emus = {}
+  self.emus = {};
 
   /**
    * Define a new emulator.
    */
   self.add = function(id, opts) {
     self.emus[id] = new Emulator(id, opts);
-  }
+  };
 
   /** Emulator only commands. */
   self.cmd_start = function(ids, opts) {
     self._execute(ids, function(emu) { emu.emuStart(opts.visual || false); });
-  }
+  };
   self.cmd_stop = function(ids, opts) {
     self._execute(ids, function(emu) { emu.emuStop(); });
-  }
+  };
 
   /** Emulator-app commands. */
   self.cmd_forceStop = function(ids, opts) {
     self._execute(ids, function(emu) { emu.appStop(opts.app); });
-  }
+  };
   self.cmd_clear = function(ids, opts) {
     self._execute(ids, function(emu) { emu.appClear(opts.app); });
-  }
+  };
   self.cmd_install = function(ids, opts) {
     self._execute(ids, function(emu) { emu.appInstall(opts.apk); });
-  }
+  };
   self.cmd_uninstall = function(ids, opts) {
     self._execute(ids, function(emu) { emu.appUninstall(opts.app); });
-  }
+  };
 
   self.executeFromOptions = function(opts) {
     self[opts.cmd].call(self, opts.ids, opts);
-  }
+  };
 
   /**
    * Run an operation over specific emulator ids or else
@@ -234,14 +229,14 @@ function Emulators(opts) {
         operation(emu);
       });
     }
-  }
+  };
 
   /**
    * Load a key-value properties file into an object.
    */
   self.loadProperties = function(filename) {
     var data = fs.readFileSync(filename).toString();
-    var props = {}
+    var props = {};
     // create an object of the property value pairs
     data.split('\n').forEach(function (line) { 
       if (line.trim().length > 0) {
@@ -253,14 +248,13 @@ function Emulators(opts) {
       }
     });
     return props;
-  }
+  };
 
   /**
    * Define emulators based on ant properties file definitions.
    */
   self.initFromAntProps = function(filename) {
     var props = this.loadProperties(filename);
-    var emuDefs = {}
     var size = _.pairs(props).length;
     // assume that # emulators <= # of properties
     // probe to find out which ones exist
@@ -291,10 +285,10 @@ function parseOptions() {
     _.map(
         _.filter(_.keys(new Emulators()), 
           function(k) {
-            return /^cmd_/.test(k);
+            return (/^cmd_/).test(k);
           }), 
       function(k) {
-        return k.replace(/^cmd_/, "")
+        return k.replace(/^cmd_/, "");
       });
 
   program
@@ -302,7 +296,7 @@ function parseOptions() {
     .usage('<command> [emulator numbers; default=all]')
     .option('-a, --app <app name>', 'E.g. com.mycorp.myapp')
     .option('-v, --visual', 'Run emulators in visual rather than headless mode')
-    .option('--apk <apk file>', 'E.g. myapp.apk')
+    .option('--apk <apk file>', 'E.g. myapp.apk');
   program.on('--help', function(){
     console.log('  Valid commands: ' + validCommands);
     console.log('');
@@ -332,7 +326,7 @@ function parseOptions() {
     ids : program.args.slice(1),
     app : defaultVal(program.app, DEFAULT_APP),
     apk : program.apk, 
-    visual : defaultVal(program.visual, false),
+    visual : defaultVal(program.visual, false)
   };
 
   console.log(opts);
