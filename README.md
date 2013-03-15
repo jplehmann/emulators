@@ -62,6 +62,9 @@ Questions
       validation
     - and be able to dynamically generate help from them (convention on
       the methods to find them)
+- biggest challenges for node.js for emulators
+  1. options / checking: wish there was more support for validation
+  2. executing commands synch: this is the design of node but makes it difficult for serial shell commands
 
 
 [node.js]: http://nodejs.org/
