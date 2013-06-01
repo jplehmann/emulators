@@ -25,17 +25,9 @@ To run unit tests:
     
     > node ./node_modules/jasmine-node/lib/jasmine-node/cli.js spec
 
-Done
-----
-x update commands to be the correct ones
-  x extract PORT from serial # ( :9)
-  x emu name
-x resetAdb
-x check if emus are running by grepping adb (before every command?)
-x why does it start emulators which dont start all the way? -- visual
 
-Todos
------
+Backlog
+-------
 * Redo this using Rhino; this was not a good app for Node.
 * try using setTimeout and setInterval/clearInterval
   * check if device is started by repeatedly checking at intervals,
