@@ -1,4 +1,3 @@
-
 Emulators.js
 ============
 Emulators.js is a utility to more easily manage an array of emulators and installed applications.
@@ -37,6 +36,7 @@ x why does it start emulators which dont start all the way? -- visual
 
 Todos
 -----
+* Redo this using Rhino; this was not a good app for Node.
 * try using setTimeout and setInterval/clearInterval
   * check if device is started by repeatedly checking at intervals,
     once done execute a method
@@ -46,10 +46,9 @@ Todos
   * outfile with unique name
   * try to create and start 3 times
 * add console as another property read from the property file
-
-* brooklyn specific
+* project specific
   * signal
-  * utilize BROOKLYN_HOME to find ant.properties (and build.xml?)
+  * utilize PROJECT_HOME to find ant.properties (and build.xml?)
 
 
 Questions
